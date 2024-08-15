@@ -15,9 +15,14 @@ class BasePageViewmodel extends ChangeNotifier {
   ValueNotifier<Customers?>(null);
   final ValueNotifier<String?> _selectedOrderNotifier =
   ValueNotifier<String?>(null);
-  final ValueNotifier<double> _totalPriceNotifier = ValueNotifier<double>(0);
-  final ValueNotifier<double> _weightNotifier = ValueNotifier<double>(0);
-  final ValueNotifier<double> _moneyNotifier = ValueNotifier<double>(0);
+  final ValueNotifier<double> _totalPriceNotifier = ValueNotifier<double>(0.0);
+  final ValueNotifier<double> _weightNotifier = ValueNotifier<double>(0.0);
+  final ValueNotifier<double> _moneyNotifier = ValueNotifier<double>(0.0);
+
+  // Declare TextEditingControllers as class members
+  final TextEditingController _weightController = TextEditingController();
+  final TextEditingController _moneyController = TextEditingController();
+
   int customer_id = 0;
   int current_index = 0;
 
@@ -27,16 +32,13 @@ class BasePageViewmodel extends ChangeNotifier {
     List<String> ordersList = ["Yağ", "Peynir"];
     Orders? newOrder;
 
-    TextEditingController _weight_controller = TextEditingController();
-    TextEditingController _money_controller = TextEditingController();
-
-    _weight_controller.addListener(() {
-      _weightNotifier.value = double.parse(_weight_controller.text) ?? 0;
+    _weightController.addListener(() {
+      _updateWeight();
       _updateTotalPrice();
     });
 
-    _money_controller.addListener(() {
-      _moneyNotifier.value = double.parse(_money_controller.text) ?? 0;
+    _moneyController.addListener(() {
+      _updateMoney();
       _updateTotalPrice();
     });
 
@@ -55,7 +57,7 @@ class BasePageViewmodel extends ChangeNotifier {
                     children: [
                       const Icon(Icons.person),
                       const Text(AppStrings.customer),
-                      const SizedBox(width: 16),
+                      const SizedBox(height: 5),
                       Expanded(
                         child: ValueListenableBuilder<Customers?>(
                           valueListenable: _selectedCustomerNotifier,
@@ -111,14 +113,14 @@ class BasePageViewmodel extends ChangeNotifier {
                       ),
                     ],
                   ),
-                  const SizedBox(width: 16,),
+                  const SizedBox(width: 16),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       const Icon(Icons.line_weight),
                       Expanded(
                         child: TextField(
-                          controller: _weight_controller,
+                          controller: _weightController,
                           keyboardType: TextInputType.number,
                           decoration: const InputDecoration(
                             hintText: AppStrings.amount,
@@ -128,14 +130,14 @@ class BasePageViewmodel extends ChangeNotifier {
                       const Text("KG"),
                     ],
                   ),
-                  const SizedBox(width: 16,),
+                  const SizedBox(width: 16),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       const Icon(Icons.money),
                       Expanded(
                         child: TextField(
-                          controller: _money_controller,
+                          controller: _moneyController,
                           keyboardType: TextInputType.number,
                           decoration: const InputDecoration(
                             hintText: AppStrings.product_price,
@@ -158,7 +160,7 @@ class BasePageViewmodel extends ChangeNotifier {
           actions: [
             TextButton(
               onPressed: () {
-                _totalPriceNotifier.value = 0;
+                _totalPriceNotifier.value = 0.0;
                 Navigator.pop(context);
               },
               child: const Text(AppStrings.cancel),
@@ -170,14 +172,16 @@ class BasePageViewmodel extends ChangeNotifier {
                   // Veritabanına ekle
                   newOrder = Orders(
                       order_type: _selectedOrderNotifier.value.toString(),
-                      order_amount: double.parse(_weight_controller.value.text),
+                      order_amount: _weightNotifier.value,
                       order_date: DateTime.now(),
-                      order_price: double.parse(_money_controller.value.text),
-                      order_total_price: _totalPriceNotifier.value.toDouble()
+                      order_price: _moneyNotifier.value,
+                      order_total_price: _totalPriceNotifier.value
                   );
                   await databaseHelper.insertOrder(newOrder!, customer_id);
+                  // Sipariş eklendi, arayüzü güncelle
+                  notifyListeners();
                   ShowSnackBar.showSnackbar(context, "Sipariş Eklendi.");
-                  _totalPriceNotifier.value = 0;
+                  _totalPriceNotifier.value = 0.0;
                   Navigator.pop(context);
                 } else {
                   // Müşteri seçilmediğinde uyarı verebilirsiniz
@@ -193,6 +197,37 @@ class BasePageViewmodel extends ChangeNotifier {
       },
     );
   }
+
+  void _updateWeight() {
+    final value = _parseDouble(_weightController.text);
+    _weightNotifier.value = value;
+  }
+  void _updateMoney() {
+    final value = _parseDouble(_moneyController.text);
+    _moneyNotifier.value = value;
+  }
+
+  double _parseDouble(String text) {
+    // Boş metin için varsayılan değer olarak 0.0 döndür
+    if (text.isEmpty) return 0.0;
+
+    // İlk olarak double'a dönüştürmeyi dene
+    final value = double.tryParse(text);
+    if (value != null) {
+      return value;
+    }
+
+    // Eğer double'a dönüştürülemediyse int'e dönüştürmeyi dene
+    final intValue = int.tryParse(text);
+    if (intValue != null) {
+      return intValue.toDouble();
+    }
+
+    // Hiçbir dönüşüm başarısızsa, varsayılan olarak 0.0 döndür
+    return 0.0;
+  }
+
+
 
   void _updateTotalPrice() {
     _totalPriceNotifier.value = _weightNotifier.value * _moneyNotifier.value;
@@ -225,4 +260,3 @@ class BasePageViewmodel extends ChangeNotifier {
     }
   }
 }
-

@@ -41,9 +41,9 @@ class DatabaseHelper {
         CREATE TABLE orders (
           order_id INTEGER PRIMARY KEY AUTOINCREMENT,
           order_type TEXT,
-          order_amount INTEGER,
-          order_total_price INTEGER,
-          order_price INTEGER,
+          order_amount REAL,
+          order_total_price REAL,
+          order_price REAL,
           order_date TEXT,
           customerId INTEGER,
           FOREIGN KEY(customerId) REFERENCES $_tableName(id)

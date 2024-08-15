@@ -108,8 +108,8 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
       bottomNavigationBar: Padding(
         padding: const EdgeInsets.all(8.0),
         child: ElevatedButton(
-          onPressed: () {
-            read.addCustomerDialog(context);
+          onPressed: () async {
+            await watch.addCustomerDialog(context);
           },
           child: const Text(AppStrings.customer_add,style: TextStyle(color: Colors.red),),
         ),
